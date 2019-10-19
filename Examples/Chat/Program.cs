@@ -6,6 +6,7 @@ using SharpExchange.Chat.Events.User.Extensions;
 using SharpExchange.Net.WebSockets;
 using SharpExchange.Chat.Actions;
 using System.Threading.Tasks;
+using SharpExchange.Chat.Events.User;
 
 public class AllData : ChatEventDataProcessor, IChatEventHandler<string>
 {
@@ -30,8 +31,30 @@ public class Program
 	private static async Task Demo()
 	{
 		// Fetch your account's credentials from somewhere.
-		var auth = new EmailAuthenticationProvider("", "");
+		Console.WriteLine("Username:");
+		string username = Console.ReadLine();
+		Console.WriteLine("Password:");
 
+		var auth = new EmailAuthenticationProvider(username, Console.ReadLine());
+		Console.Clear();
+
+		while (true)
+		{
+			try
+			{
+				using var _ = new RoomWatcher<DefaultWebSocket>(auth, roomUrl);
+				break;
+			}
+			catch (InvalidCredentialsException e)
+			{
+				Console.WriteLine("Wrong login credentials");
+				Console.WriteLine("Username:");
+				username = Console.ReadLine();
+				Console.WriteLine("Password:");
+				auth = new EmailAuthenticationProvider(username, Console.ReadLine());
+				Console.Clear();
+			}
+		}
 		// Create an instance of the ActionScheduler. This will
 		// allow us to execute chat actions like: posting messages,
 		// kicking users, moving messages, etc.
@@ -40,8 +63,13 @@ public class Program
 		// specify (via the type parameter) what WebSocket implementation
 		// we'd like to use. This class allows you to subscribe to chat events.
 		using var roomWatcher = new RoomWatcher<DefaultWebSocket>(auth, roomUrl);
+
+		async void HandleUserMentioned(MentionedUser obj)
+		{
+			_ = await actionScheduler.CreateMessageAsync("Hi, I was pinged by id " + obj.PingerId);
+		}
 		// Subscribe to the UserMentioned event.
-		_ = roomWatcher.AddUserMentionedEventHandler(async m => await actionScheduler.CreateReplyAsync("hello!", m.MessageId));
+		_ = roomWatcher.AddUserMentionedEventHandler(HandleUserMentioned);
 
 		// Besides being able to subscribe to the default events,
 		// you can also create (and listen to) your own. Your class must
@@ -50,7 +78,7 @@ public class Program
 		var customEventHanlder = new AllData();
 
 		// Add a very basic handler.
-		customEventHanlder.OnEvent += data => Console.WriteLine(data);
+		customEventHanlder.OnEvent += data => Console.WriteLine("Eventdata: " + data);
 
 		// Add our custom event handler so we can
 		// begin processing the incoming event data.
