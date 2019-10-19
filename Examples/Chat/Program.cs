@@ -24,7 +24,7 @@ public class AllData : ChatEventDataProcessor, IChatEventHandler<string>
 public class Program
 {
 	// This stuff should ideally be loaded in from a configuration provider.
-	private const string roomUrl = "https://chat.stackexchange.com/rooms/1/sandbox";
+	private const string roomUrl = "https://chat.stackoverflow.com/rooms/1/sandbox";
 
 	private static void Main(string[] args) => Demo().Wait();
 
